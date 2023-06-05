@@ -1,0 +1,77 @@
+.carousel-item img {
+    width: 100%;
+    height: auto;
+}
+
+.card {
+    background-color: #212529;
+    color: #fff;
+    border: none;
+    border-radius: 0;
+}
+
+.card-title {
+    color: #fff;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.card-text {
+    color: #fff;
+}
+
+.list-group-item {
+    background-color: #212529;
+    color: #fff;
+    border: none;
+}
+
+.list-group-item.text-muted {
+    color: #aaa;
+}
+
+.card-link {
+    color: #fff;
+}
+
+.btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+#map {
+    width: 600px;
+    height: 300px;
+}
+
+.validated-form .form-control:valid {
+    border-color: #28a745;
+    box-shadow: none;
+}
+
+.validated-form .form-control:valid:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.starability-heartbeat input[type="radio"]:checked ~ label,
+.starability-heartbeat input[type="radio"]:checked ~ label ~ label {
+    color: #ffc107;
+}
+
+.starability-heartbeat input[type="radio"]:not(:checked) ~ label {
+    color: #aaa;
+}
+
+.starability-result {
+    color: #ffc107;
+}
+.carousel-image {
+    height: 300px; /* Adjust the height as needed */
+    object-fit: cover;
+}
