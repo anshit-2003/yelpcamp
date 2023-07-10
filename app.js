@@ -17,11 +17,11 @@ const passport = require("passport")
 const passport_local = require("passport-local")
 const user = require("./Modals/users")
 const MongoStore = require('connect-mongo');
-const dburl = process.env.DB_URL
+const dburl = process.env.DB_URL;
 
 const port = process.env.PORT || 8080;
 
-//Database
+// Database Connection
 const connectdb = async()=>{
     try{
         const conn = await mongoose.connect(dburl);
@@ -55,7 +55,7 @@ app.use(express.urlencoded({ extended: true })); // for parsing application/x-ww
 app.use(express.static('public'))
 
 
-//Session & Flash
+// Session & Flash
 const sessionconfig = {
     store,
     secret : process.env.SESSION_SECRET,
