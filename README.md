@@ -4,7 +4,7 @@ Welcome to YelpCamp, a comprehensive camping platform that allows users to explo
 
 ## Deployment
 
-YelpCamp is currently deployed and accessible at [YelpCamp](https://yelp-camp-qhwur.ondigitalocean.app/). You can visit the website to explore the campgrounds, read reviews, and contribute to the camping community.
+YelpCamp is currently deployed and accessible at [YelpCamp](https://yelp-camp-z7nph.ondigitalocean.app/). You can visit the website to explore the campgrounds, read reviews, and contribute to the camping community.
 
 ## Features
 
