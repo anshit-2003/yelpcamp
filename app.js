@@ -17,7 +17,7 @@ const passport = require("passport")
 const passport_local = require("passport-local")
 const user = require("./Modals/users")
 const MongoStore = require('connect-mongo');
-const dburl = process.env.DB_URL;
+const dburl = "mongodb://localhost:27017/yelpcamp"
 
 const port = process.env.PORT || 8080;
 
@@ -79,7 +79,7 @@ passport.use(new passport_local(user.authenticate()));
 passport.serializeUser(user.serializeUser());
 passport.deserializeUser(user.deserializeUser());
 
-//Session Localsx
+//Session Locals
 app.use((req,res,next)=>{
     res.locals.currentUser= req.user;
     res.locals.success =req.flash("success")
@@ -107,7 +107,7 @@ app.use((err, req, res, next) => {
 
 connectdb().then(()=>{
     app.listen(port, () => {
-        console.log(`Listening on port${port}`);
+        console.log(`http://localhost:${port}`);
     });
 
 })
