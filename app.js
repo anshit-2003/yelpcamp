@@ -1,113 +1,161 @@
-if(process.env.NODE_ENV !== "production"){
-    require("dotenv").config()
+if(process.env.NODE_ENV !== 'production'){
+    require('dotenv').config()
 }
 
-const express = require("express");
-const mongoose = require("mongoose");
-const path = require("path");
-const session = require("express-session");
-const expressError = require("./utils/error");
-const campgrounds = require("./routes/campground");
-const flash = require("connect-flash")
-const reviews = require("./routes/reviews");
-const ejsmate = require("ejs-mate");
-const userroutes = require("./routes/user")
-const methodOverride = require("method-override");
-const passport = require("passport")
-const passport_local = require("passport-local")
-const user = require("./Modals/users")
-const MongoStore = require('connect-mongo');
-const dburl = process.env.DB_URL;
 
-const port = process.env.PORT || 8080;
+const express = require('express');
+const path = require('path');
+const mongoose = require('mongoose');
+const ejsMate = require('ejs-mate');
+const session = require('express-session');
+const flash = require('connect-flash');
+const ExpressError = require('./utils/ExpressError');
+const methodOverride = require('method-override');
+const passport = require('passport');
+const LocalStrategy = require('passport-local');
+const User = require('./models/user');
+const port = process.env.port || 3000;
+const mongoSanitize = require('express-mongo-sanitize');
+const helmet = require('helmet');
 
-// Database Connection
-const connectdb = async()=>{
-    try{
-        const conn = await mongoose.connect(dburl);
-        console.log(`MongoDB Connected : ${conn.connection.host}`)
-    }catch(err){
-        console.log(err)
-        process.exit(1) 
-    }
-}
 
-const store = MongoStore.create({
-    mongoUrl: dburl,
-    touchAfter: 24 * 60 * 60,
-    crypto: {
-        secret: process.env.SESSION_SECRET
-    }
+
+const userRoutes = require('./routes/users');
+const campgroundRoutes = require('./routes/campgrounds');
+const reviewRoutes = require('./routes/reviews');
+const MongoDBStore = require('connect-mongo')(session)
+const dbUrl = process.env.DB_URL;
+mongoose.connect(dbUrl);
+
+const db = mongoose.connection;
+db.on("error", console.error.bind(console, "connection error:"));
+db.once("open", () => {
+    console.log("Database connected");
 });
 
-//Creating App
 const app = express();
 
-//App Configuration
-app.engine("ejs", ejsmate);
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-app.set("public", path.join(__dirname,"public"))
+app.engine('ejs', ejsMate)
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'))
 
-//Middleware
-app.use(methodOverride("_method"));
-app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
-app.use(express.static('public'))
+app.use(express.urlencoded({ extended: true }));
+app.use(methodOverride('_method'));
+app.use(express.static(path.join(__dirname, 'public')))
+app.use(mongoSanitize({
+    replaceWith: '_',
+  }));
 
+const secret = process.env.SECRET || 'thisshouldbeabettersecret!'
+const store = new MongoDBStore({
+    url : dbUrl,
+    secret,
+    touchAfter : 24 * 60 * 60 
+})
 
-// Session & Flash
-const sessionconfig = {
+store.on('error',function (e) {
+    console.log('session store error!!!!',e)
+})
+const sessionConfig = {
     store,
-    secret : process.env.SESSION_SECRET,
-    resave : false,
-    saveUninitialized : true,
-    cookie : {
-        name : "bleh",
-        expires : Date.now() + 1000 * 60 * 60 * 24 * 7,
-        maxAge : 1000 * 60 * 60 * 24 * 7,
-        HttpOnly : true,
-        // secure : true
+    name: 'session',
+    secret,
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        httpOnly: true,
+        // secure:true,
+        expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
+        maxAge: 1000 * 60 * 60 * 24 * 7
     }
 }
-app.use(session(sessionconfig))
-app.use(flash())
 
-//Passport Config
-app.use(passport.initialize())
+app.use(session(sessionConfig))
+app.use(flash()); 
+app.use(helmet());
+const scriptSrcUrls = [
+    "https://stackpath.bootstrapcdn.com/",
+    "https://api.tiles.mapbox.com/",
+    "https://api.mapbox.com/",
+    "https://kit.fontawesome.com/",
+    "https://cdnjs.cloudflare.com/",
+    "https://cdn.jsdelivr.net",
+];
+const styleSrcUrls = [
+    "https://kit-free.fontawesome.com/",
+    "https://stackpath.bootstrapcdn.com/",
+    "https://api.mapbox.com/",
+    "https://api.tiles.mapbox.com/",
+    "https://fonts.googleapis.com/",
+    "https://use.fontawesome.com/",
+];
+const connectSrcUrls = [
+    "https://api.mapbox.com/",
+    "https://a.tiles.mapbox.com/",
+    "https://b.tiles.mapbox.com/",
+    "https://events.mapbox.com/",
+];
+const fontSrcUrls = [];
+app.use(
+    helmet.contentSecurityPolicy({
+        directives: {
+            defaultSrc: [],
+            connectSrc: ["'self'", ...connectSrcUrls],
+            scriptSrc: ["'unsafe-inline'", "'self'", ...scriptSrcUrls],
+            styleSrc: ["'self'", "'unsafe-inline'", ...styleSrcUrls],
+            workerSrc: ["'self'", "blob:"],
+            objectSrc: [],
+            imgSrc: [
+                "'self'",
+                "blob:",
+                "data:",
+                "https://res.cloudinary.com/dz80pvk4x/", //SHOULD MATCH YOUR CLOUDINARY ACCOUNT! 
+                "https://images.unsplash.com/",
+            ],
+            fontSrc: ["'self'", ...fontSrcUrls],
+        },
+    })
+);
+
+
+app.use(passport.initialize());
 app.use(passport.session());
-passport.use(new passport_local(user.authenticate()));
-passport.serializeUser(user.serializeUser());
-passport.deserializeUser(user.deserializeUser());
+passport.use(new LocalStrategy(User.authenticate()));
 
-//Session Locals
-app.use((req,res,next)=>{
-    res.locals.currentUser= req.user;
-    res.locals.success =req.flash("success")
-    res.locals.error = req.flash("error")
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+app.use((req, res, next) => {
+    res.locals.currentUser = req.user;
+    res.locals.success = req.flash('success');
+    res.locals.error = req.flash('error');
     next();
 })
 
-//Routes
-app.use("/", userroutes);
-app.use("/campgrounds", campgrounds);
-app.use("/campgrounds/:id/reviews", reviews);
+
+app.use('/', userRoutes);
+app.use('/campgrounds', campgroundRoutes)
+app.use('/campgrounds/:id/reviews', reviewRoutes)
 
 
-//Middleware
-app.all("*", (req, res, next) => {
-    next(new expressError("Page Not Found!", 404));
+app.get('/', (req, res) => {
+    res.render('home')
 });
+
+
+app.all('*', (req, res, next) => {
+    next(new ExpressError('Page Not Found', 404))
+})
 
 app.use((err, req, res, next) => {
-    const { statuscode = 500 } = err;
-    if (!err.message) err.message = "Something Went Wrong";
-    res.status(statuscode).render("error", { err });
-});
-
-
-connectdb().then(()=>{
-    app.listen(port, () => {
-        console.log(`http://localhost:${port}`);
-    });
-
+    const { statusCode = 500 } = err;
+    if (!err.message) err.message = 'Oh No, Something Went Wrong!'  
+    res.status(statusCode).render('error', { err })
 })
+
+app.listen(port, () => {
+    console.log(`Serving on port ${port}`)
+    
+})
+
+
